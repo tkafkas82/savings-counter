@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Savings Counter</title>
+<style>
+:root{--bg:#f6f5f1;--card:#fff;--text:#1d1d1b;--muted:#6b6a66;--accent:#1a8a5a;--line:#e3e1da;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#141413;--card:#1f1f1d;--text:#f1efe8;--muted:#9b9a94;--accent:#4cc38a;--line:#33322f}}
+:root[data-theme="dark"]{--bg:#141413;--card:#1f1f1d;--text:#f1efe8;--muted:#9b9a94;--accent:#4cc38a;--line:#33322f}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,"Segoe UI",sans-serif;display:flex;justify-content:center;padding:20px}
+main{width:100%;max-width:420px}
+h1{font-size:16px;font-weight:600;color:var(--muted);margin:8px 0 16px;text-align:center}
+.hero{background:var(--card);border:1px solid var(--line);border-radius:20px;padding:28px 16px;text-align:center}
+.amt{font-size:48px;font-weight:700;color:var(--accent);font-variant-numeric:tabular-nums;word-break:break-all}
+.sub{color:var(--muted);font-size:14px;margin-top:6px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:12px 0}
+.stat{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;text-align:center}
+.stat b{display:block;font-size:20px;font-variant-numeric:tabular-nums}
+.stat span{font-size:12px;color:var(--muted)}
+.set{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px}
+label{display:block;font-size:13px;color:var(--muted);margin:10px 0 4px}
+label:first-child{margin-top:0}
+input{width:100%;padding:10px;font-size:16px;border:1px solid var(--line);border-radius:10px;background:var(--bg);color:var(--text)}
+</style>
+</head>
+<body>
+<main>
+<h1>Saved since leaving the apartment</h1>
+<div class="hero"><div class="amt" id="total">€0.00</div><div class="sub" id="since"></div></div>
+<div class="grid">
+<div class="stat"><b id="days">0</b><span>days free</span></div>
+<div class="stat"><b id="perday">€0</b><span>saved per day</span></div>
+<div class="stat"><b id="months">0</b><span>months of rent</span></div>
+<div class="stat"><b id="year">€0</b><span>per year</span></div>
+</div>
+<div class="set">
+<label for="rent">Old rent per month (€)</label>
+<input id="rent" type="number" min="0" step="any" value="400" inputmode="decimal">
+<label for="cost">What you pay now per month (€, optional)</label>
+<input id="cost" type="number" min="0" step="any" value="0" inputmode="decimal">
+<label for="date">Moved out on</label>
+<input id="date" type="date">
+</div>
+</main>
+<script>
+var KEY="savings-counter-v1",$=function(i){return document.getElementById(i)};
+var MONTH=30.4375*86400000;
+function today(){var d=new Date();return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0")}
+var s={rent:400,cost:0,date:today()};
+try{var raw=localStorage.getItem(KEY);if(raw){var p=JSON.parse(raw);if(p&&typeof p==="object")s=Object.assign(s,p)}}catch(e){}
+$("rent").value=s.rent;$("cost").value=s.cost;$("date").value=s.date;
+function save(){try{localStorage.setItem(KEY,JSON.stringify(s))}catch(e){}}
+function eur(n){return "€"+n.toLocaleString("en-GB",{minimumFractionDigits:2,maximumFractionDigits:2})}
+function tick(){
+var net=Math.max(0,(+s.rent||0)-(+s.cost||0));
+var start=new Date(s.date+"T00:00:00").getTime();
+var el=Math.max(0,Date.now()-start);
+$("total").textContent=eur(net*el/MONTH);
+$("days").textContent=Math.floor(el/86400000);
+$("months").textContent=(el/MONTH).toFixed(1);
+$("perday").textContent=eur(net*12/365.25);
+$("year").textContent=eur(net*12).replace(".00","");
+$("since").textContent=el>0?"Saving "+eur(net)+" a month":"Start date is in the future";
+}
+["rent","cost","date"].forEach(function(id){$(id).addEventListener("input",function(){s[id]=this.value;if(id==="date"&&!this.value)s.date=today();save();tick()})});
+tick();setInterval(tick,250);
+</script>
+</body>
+</html>
